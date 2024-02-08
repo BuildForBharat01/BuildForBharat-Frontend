@@ -1,16 +1,16 @@
 import "./chat.css";
 import logo from "../../assets/shoptalk.png";
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
-import { routes } from "../../routes/routes";
-const { Configuration, OpenAIApi } = require("openai");
+import OpenAI from 'openai';
 
 const Chat = (props) => {
-  const configuration = new Configuration({
-    apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+
+  const openai = new OpenAI({
+    apiKey: process.env['REACT_APP_OPENAI_API_KEY'], // This is the default and can be omitted
+    dangerouslyAllowBrowser: true
   });
 
-  const openai = new OpenAIApi(configuration);
+  // const openai = new OpenAIApi(configuration);
   const msgScrollerRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
   const [productData, setProductData] = useState("");
@@ -32,11 +32,6 @@ const Chat = (props) => {
   const handleSend = async () => {
     if (inputValue.trim() === "") return;
 
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer secret_token",
-    };
-
     try {
       setMessages((prev) => [
         ...prev,
@@ -47,11 +42,9 @@ const Chat = (props) => {
 
       const full_prompt = `The product details are as follows:\n\n${productData}\n\nNow answer the question: ${inputValue}`
 
-      const result = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt: full_prompt,
-        temperature: 0.5,
-        max_tokens: 4000,
+      const chatCompletion = await openai.chat.completions.create({
+        messages: [{ role: 'user', content: full_prompt }],
+        model: 'gpt-3.5-turbo',
       });
 
       setMessages((prev) => {
@@ -60,7 +53,7 @@ const Chat = (props) => {
         updatedMessages.pop(); // Remove the loading message
         return [
           ...updatedMessages,
-          { author: "bot", message: result.data.choices[0].text },
+          { author: "bot", message: chatCompletion.choices[0].message.content },
         ];
       });
     } catch (error) {
