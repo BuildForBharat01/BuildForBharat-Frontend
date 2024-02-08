@@ -1,13 +1,30 @@
 import "./chat.css";
 import logo from "../../assets/shoptalk.png";
 import { useEffect, useRef, useState } from "react";
-import OpenAI from 'openai';
+import OpenAI from "openai";
+import MsgTile from "./msg";
 
 const Chat = (props) => {
+  const [toSpeak, setToSpeak] = useState("");
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(-1);
+  const [utterance, setUtterance] = useState(null);
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (toSpeak !== "") {
+      const u = new SpeechSynthesisUtterance(toSpeak);
+      setUtterance(u);
+      synth.speak(u);
+    }
+    return () => {
+      synth.cancel();
+    };
+  }, [toSpeak]);
+
 
   const openai = new OpenAI({
-    apiKey: process.env['REACT_APP_OPENAI_API_KEY'], // This is the default and can be omitted
-    dangerouslyAllowBrowser: true
+    apiKey: process.env["REACT_APP_OPENAI_API_KEY"], // This is the default and can be omitted
+    dangerouslyAllowBrowser: true,
   });
 
   // const openai = new OpenAIApi(configuration);
@@ -40,21 +57,19 @@ const Chat = (props) => {
       ]);
       setInputValue("");
 
-      const full_prompt = `The product details are as follows:\n\n${productData}\n\nNow answer the question: ${inputValue}`
+      const full_prompt = `The product details are as follows:\n\n${productData}\n\nNow answer the question: ${inputValue}`;
 
       const chatCompletion = await openai.chat.completions.create({
-        messages: [{ role: 'user', content: full_prompt }],
-        model: 'gpt-3.5-turbo',
+        messages: [{ role: "user", content: full_prompt }],
+        model: "gpt-3.5-turbo",
       });
 
       setMessages((prev) => {
+        const reply = chatCompletion.choices[0].message.content;
         // Replace the loading message with the actual reply
         const updatedMessages = [...prev];
         updatedMessages.pop(); // Remove the loading message
-        return [
-          ...updatedMessages,
-          { author: "bot", message: chatCompletion.choices[0].message.content },
-        ];
+        return [...updatedMessages, { author: "bot", message: reply }];
       });
     } catch (error) {
       console.log(error);
@@ -78,16 +93,19 @@ const Chat = (props) => {
       <div className="msg-scroller" ref={msgScrollerRef}>
         {messages.map((msg, i) => (
           <div
+            key={i}
             className={`msg-wrapper ${
               msg.author !== "bot" ? "user-msg" : "bot-msg"
             }`}
-            key={i}
           >
-            <div
-              className={`msg ${msg.author !== "bot" ? "user-msg" : "bot-msg"}`}
-            >
-              {msg.message}
-            </div>
+            <MsgTile
+              msg={msg}
+              msgKey={i}
+              currentlyPlaying={currentlyPlaying}
+              setCurrentlyPlaying={setCurrentlyPlaying}
+              setToSpeak={setToSpeak}
+              utterance={utterance}
+            />
           </div>
         ))}
       </div>
