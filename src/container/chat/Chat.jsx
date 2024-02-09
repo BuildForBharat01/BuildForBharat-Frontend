@@ -3,6 +3,7 @@ import logo from "../../assets/shoptalk.png";
 import { useEffect, useRef, useState } from "react";
 import OpenAI from "openai";
 import MsgTile from "./msg";
+import Mic from "./mic";
 
 const Chat = (props) => {
   const [toSpeak, setToSpeak] = useState("");
@@ -22,7 +23,7 @@ const Chat = (props) => {
   }, [toSpeak]);
 
   const openai = new OpenAI({
-    apiKey: process.env["REACT_APP_OPENAI_API_KEY"], // This is the default and can be omitted
+    apiKey: process.env["REACT_APP_OPENAI_API_KEY"],
     dangerouslyAllowBrowser: true,
   });
 
@@ -118,8 +119,12 @@ const Chat = (props) => {
               handleSend();
             }
           }}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+          }}
         />
+        <Mic setInputValue={setInputValue} />
+
         <div className="send-btn" onClick={() => handleSend()}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
